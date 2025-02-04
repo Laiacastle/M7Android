@@ -1,4 +1,4 @@
-package cat.itb.m78.exercices
+package cat.itb.m78.exercices.T5ivial
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -14,11 +15,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import cat.itb.m78.exercices.Navegació.ScreenInici
-import cat.itb.m78.exercices.Navegació.ScreenPlay
-import cat.itb.m78.exercices.Navegació.TikTak
-import kotlin.random.Random
+import kotlinx.coroutines.delay
 
 object Trivial {
     @kotlinx.serialization.Serializable
@@ -26,11 +24,11 @@ object Trivial {
     @kotlinx.serialization.Serializable
     data object ScreenTrivial
     @kotlinx.serialization.Serializable
-    data class ScreenEnd(val message: String)
+    data object ScreenEnd
     @kotlinx.serialization.Serializable
     data object ScreenSettings
 }
-data class Question(val question: String, val correctAnswer: String, val IncorrectAnswer: String, val IncorrectAnswerTwo: String, val incorrectAnswerThree: String)
+data class Question(val question: String, val correctAnswer: String, val incorrectAnswer: String, val incorrectAnswerTwo: String, val incorrectAnswerThree: String)
 object MathematicQuestion{
     val question1 = Question("¿Cuál es el valor de pi (π) hasta tres decimales?", "3.14", "3.15", "3.12", "3.11")
     val question2 = Question("¿Cómo se llama el polígono con 12 lados?", "Dodecágono", "Decágono", "Heptágono", "Octágono")
@@ -57,7 +55,7 @@ object HistoricQuestions{
     val question10 = Question("¿Qué gran imperio fue derrotado en la Batalla de Waterloo?", "El Imperio Napoleónico", "El Imperio Romano", "El Imperio Bizantino", "El Imperio Francés")
 
 }
-object GenaralQuestions{
+object GeneralQuestions{
     val question1 = Question("¿Cuál es el país más grande del mundo por superficie?", "Rusia", "Canadá", "China", "Estados Unidos")
     val question2 = Question("¿Quién pintó la Mona Lisa?", "Leonardo da Vinci", "Pablo Picasso", "Vincent van Gogh", "Claude Monet")
     val question3 = Question("¿En qué continente se encuentra Egipto?", "África", "Asia", "Europa", "Oceanía")
@@ -97,26 +95,141 @@ object ScienceQuestions{
 
 }
 private class PlayTrivial: ViewModel() {
+    var questionsScience = listOf(
+        ScienceQuestions.question1,
+        ScienceQuestions.question2,
+        ScienceQuestions.question3,
+        ScienceQuestions.question4,
+        ScienceQuestions.question5,
+        ScienceQuestions.question6,
+        ScienceQuestions.question7,
+        ScienceQuestions.question8,
+        ScienceQuestions.question9,
+        ScienceQuestions.question10
+    )
+    var questionsSports = listOf(
+        SportsQuestions.question1,
+        SportsQuestions.question2,
+        SportsQuestions.question3,
+        SportsQuestions.question4,
+        SportsQuestions.question5,
+        SportsQuestions.question6,
+        SportsQuestions.question7,
+        SportsQuestions.question8,
+        SportsQuestions.question9,
+        SportsQuestions.question10
+    )
+    val questionsGeneral = listOf(
+        GeneralQuestions.question1,
+        GeneralQuestions.question2,
+        GeneralQuestions.question3,
+        GeneralQuestions.question4,
+        GeneralQuestions.question4,
+        GeneralQuestions.question5,
+        GeneralQuestions.question6,
+        GeneralQuestions.question7,
+        GeneralQuestions.question8,
+        GeneralQuestions.question9,
+        GeneralQuestions.question10
+    )
+    val questionsMath = listOf(
+        MathematicQuestion.question1,
+        MathematicQuestion.question2,
+        MathematicQuestion.question3,
+        MathematicQuestion.question4,
+        MathematicQuestion.question5,
+        MathematicQuestion.question6,
+        MathematicQuestion.question7,
+        MathematicQuestion.question8,
+        MathematicQuestion.question9,
+        MathematicQuestion.question10
+    )
+    val questionsHistor = listOf(
+        HistoricQuestions.question1,
+        HistoricQuestions.question2,
+        HistoricQuestions.question3,
+        HistoricQuestions.question4,
+        HistoricQuestions.question5,
+        HistoricQuestions.question6,
+        HistoricQuestions.question7,
+        HistoricQuestions.question8,
+        HistoricQuestions.question9,
+        HistoricQuestions.question10
+    )
+    var categories = listOf(ScienceQuestions, SportsQuestions, GeneralQuestions, MathematicQuestion, HistoricQuestions)
+    var category = mutableStateOf(categories.random())
+    var currentQuestion = questionsHistor.random()
+    var answers = listOf(currentQuestion.correctAnswer, currentQuestion.incorrectAnswer, currentQuestion.incorrectAnswerTwo, currentQuestion.incorrectAnswerThree)
     var count = mutableStateOf(0)
     var dificulty = mutableStateOf(1)
     var rounds = mutableStateOf(5)
     var time = mutableStateOf(10)
-    var categories = listOf(ScienceQuestions, SportsQuestions, GenaralQuestions, MathematicQuestion, HistoricQuestions)
-
-    var category = mutableStateOf(categories.random())
-    var currentQuestion = mutableStateOf(category.randomQuestion())
+    var correct = mutableStateOf(false)
     fun randomQuestion(){
-        when(category){
-            case ScienceQuestions: currentQuestion = ScienceQuestions.random()
+        when(category.toString()){
+            "ScienceQuestions" -> currentQuestion = questionsScience.random()
+            "SportsQuestions" -> currentQuestion = questionsSports.random()
+            "GeneralQuestions" -> currentQuestion = questionsGeneral.random()
+            "MathematicQuestions" -> currentQuestion = questionsMath.random()
+            "HistoricQuestions" -> currentQuestion = questionsHistor.random()
         }
+    }
+    fun comprvCorrect(value: String ){
+        if(value == currentQuestion.correctAnswer){
+            correct.value = true
+        }
+    }
+    fun time(){
+        time.value --
+    }
+}
+@Composable
+fun countDown(){
+    val model = viewModel{ PlayTrivial() }
+    LaunchedEffect(key1 = model.time.value){
+        while(model.time.value > 0){
+            delay(1000L)
+            model.time()
+        }
+    }
+}
+@Composable
+fun ScreenTrivial(navigateToScreenEnd: () -> Unit, navigateToScreenTrivial: () -> Unit){
+    val model = viewModel { PlayTrivial() }
+    Column{
+        while(model.time.value > 0){
+            val answers = listOf(model.answers.random(), model.answers.random(), model.answers.random(), model.answers.random())
+            Text(model.time.toString())
+            Text(model.currentQuestion.question)
+            buttons(model::comprvCorrect, navigateToScreenTrivial, answers[0])
+            buttons(model::comprvCorrect, navigateToScreenTrivial, answers[1])
+            buttons(model::comprvCorrect, navigateToScreenTrivial, answers[2])
+            buttons(model::comprvCorrect, navigateToScreenTrivial, answers[3])
+        }
+        buttonExit(navigateToScreenTrivial)
+        //buttonExit (navigateToScreenEnd)
+        Button(onClick = {navigateToScreenEnd()}){
+            Text("tomaa")
+        }
+    }
+
+
+
+}
+@Composable
+fun buttons(onClick: (String) ->Unit, navigateToScreenTrivial: () -> Unit, message:String ){
+    Button(onClick = {onClick(message)}){
+        Text(message)
+        buttonExit (navigateToScreenTrivial)
     }
 }
 
 @Composable
-fun ScreenTrivial(navigateToScreenEnd: () -> Unit){
-    val model = viewModel { PlayTrivial() }
+fun buttonExit(navigateToScreenTrivial: () -> Unit){
+    Button(onClick = navigateToScreenTrivial){
+        Text("NextQuestion")
+    }
 }
-
 @Composable
 fun ScreenInici(navigateToScreenTrivial: () -> Unit){
     Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center){
@@ -128,13 +241,13 @@ fun ScreenInici(navigateToScreenTrivial: () -> Unit){
 
 }
 @Composable
-fun ScreenEnd(message: String, navigateToScreenInici: ()-> Unit){
+fun ScreenEnd(navigateToScreenInici: ()-> Unit){
     Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center){
-        Text(message)
+        Text("pumba")
         Text("Screen 3")
         Button(onClick = {navigateToScreenInici()}) {
         Text("main menu")}
-}
+}}
 @Composable
 fun ScreenSettings(navigateToScreenInici: () -> Unit){
 
@@ -142,19 +255,21 @@ fun ScreenSettings(navigateToScreenInici: () -> Unit){
 @Composable
 fun TrivialScreenSample() {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = Trivial.ScreenInici) {
+    NavHost(navController = navController, startDestination = Trivial.ScreenTrivial) {
 
         composable<Trivial.ScreenInici> {
             ScreenInici{navController.navigate(Trivial.ScreenTrivial)}
         }
         composable<Trivial.ScreenTrivial> {
-            ScreenTrivial { navController.navigate(Trivial.ScreenEnd(it)) }
+            ScreenTrivial(
+                navigateToScreenEnd = {navController.navigate(Trivial.ScreenEnd)},
+                navigateToScreenTrivial = {navController.navigate(Trivial.ScreenEnd)}
+            )
         }
         composable<Trivial.ScreenEnd> { backStack ->
-            val message = backStack.toRoute<Trivial.ScreenEnd>().message
-            ScreenEnd(message){ navController.navigate(Trivial.ScreenInici) }
+            ScreenEnd{ navController.navigate(Trivial.ScreenInici) }
         }
-        composable<Trivial.ScreenSettings> {backStat ->
+        composable<Trivial.ScreenSettings> { backStat ->
             ScreenSettings{navController.navigate(Trivial.ScreenInici)}
         }
     }
