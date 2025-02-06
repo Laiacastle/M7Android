@@ -14,6 +14,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -234,10 +238,13 @@ fun countDown(){
 @Composable
 fun ScreenTrivial(navigateToScreenEnd: () -> Unit){
     val model = viewModel { PlayTrivial() }
-
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
-            Text(model.time.value.toString())
-            Text(model.currentQuestion.value.question)
+    val yellow = Color(0xfffbe7c6)
+    val green = Color(0xffb4f8c8)
+    val blue = Color(0xffa0e7e5)
+    val pink = Color(0xffffaebc)
+    Column(Modifier.fillMaxSize().background(color = yellow), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
+            Text(model.time.value.toString(), color = green)
+            Text(model.currentQuestion.value.question, color = Color.Gray)
         Column(modifier = Modifier.padding(20.dp)){
             Row{
                 Column{
@@ -259,12 +266,12 @@ fun ScreenTrivial(navigateToScreenEnd: () -> Unit){
         }
         if(model.count.value < model.rounds.value){
             correct(model.clicado.value, model.correct.value, model::randomQuestion)
-            Text("Ronda: "+ model.count.value)
+            Text("Ronda: "+ model.count.value, color = Color.Gray)
         }else{
             correct(model.clicado.value, model.correct.value)
             Text("Ronda "+ model.count.value)
         }
-        Button(onClick = {navigateToScreenEnd()}){
+        Button(onClick = {navigateToScreenEnd()}, colors = ButtonColors(pink, blue, Color.Black, Color.White)){
             Text("Exit")
         }
     }
@@ -298,29 +305,35 @@ fun correct(click: Boolean, correct: Boolean, question: () -> Unit){
 }
 @Composable
 fun nextQuestion(onClick : () ->Unit){
-    Button(onClick = onClick){
+    OutlinedButton(onClick = onClick){
         Text("nextQuestion")
     }
 }
 @Composable
 fun buttons(onClick: (String) ->Unit, message:String, click: ()-> Unit ){
-    Button(onClick = {onClick(message); click()}){
+    val blue = Color(0xffa0e7e5)
+    val pink = Color(0xffffaebc)
+    FilledTonalButton(onClick = {onClick(message); click()}, colors = ButtonColors(blue, Color.White, Color.Black, Color.White)){
         Text(message)
     }
 }
 
 @Composable
 fun ScreenInici(navigateToScreenTrivial: () -> Unit, navigateToScreenSettings: () -> Unit){
-    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center){
+    val yellow = Color(0xfffbe7c6)
+    val green = Color(0xffb4f8c8)
+    val blue = Color(0xffa0e7e5)
+    val pink = Color(0xffffaebc)
+    Column(Modifier.fillMaxSize().background(color = yellow), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center){
 
         Image(painter = painterResource(Res.drawable.GatoInteligente), contentDescription = null, modifier = Modifier.size(200.dp).border(2.dp, Color.White, CircleShape).clip(
             CircleShape
         ))
-        Text("TRIVIAL", fontSize = 4.em, fontWeight = FontWeight.Bold)
-        Button(onClick = {navigateToScreenTrivial()}){
+        Text("TRIVIAL", fontSize = 4.em, fontWeight = FontWeight.Bold, color = green)
+        ElevatedButton(onClick = {navigateToScreenTrivial()}, colors = ButtonColors(blue, pink, Color.Black, Color.White)){
             Text("Play")
         }
-        Button(onClick = {navigateToScreenSettings()}){
+        ElevatedButton(onClick = {navigateToScreenSettings()}, colors = ButtonColors(pink, blue, Color.Black, Color.White)){
             Text("Settings")
         }
     }
@@ -328,17 +341,30 @@ fun ScreenInici(navigateToScreenTrivial: () -> Unit, navigateToScreenSettings: (
 }
 @Composable
 fun ScreenEnd(navigateToScreenInici: ()-> Unit){
-    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center){
+    val model = viewModel { PlayTrivial() }
+    val yellow = Color(0xfffbe7c6)
+    val green = Color(0xffb4f8c8)
+    val blue = Color(0xffa0e7e5)
+    val pink = Color(0xffffaebc)
+    Column(Modifier.fillMaxSize().background(color = yellow), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center){
         val model = viewModel { PlayTrivial() }
-        Text("Puntuació: "+model.countEncertades.value+"/"+model.rounds.value)
-        Button(onClick = {navigateToScreenInici()}) {
+        Text("Puntuació: "+model.countEncertades.value+"/"+model.rounds.value, color = green)
+        Button(onClick = {navigateToScreenInici()}, colors = ButtonColors(pink, blue, Color.Black, Color.White)) {
             Text("Main menu")}
     }}
 @Composable
 fun ScreenSettings(navigateToScreenInici: () -> Unit){
-    Button(onClick = {navigateToScreenInici()}){
-        Text("<--")
+    val model = viewModel { PlayTrivial() }
+    val yellow = Color(0xfffbe7c6)
+    val green = Color(0xffb4f8c8)
+    val blue = Color(0xffa0e7e5)
+    val pink = Color(0xffffaebc)
+    Column(modifier = Modifier.background(color = yellow).fillMaxSize()){
+        Button(onClick = {navigateToScreenInici()}, colors = ButtonColors(pink, blue, Color.Black, Color.White)){
+            Text("<--")
+        }
     }
+
 }
 @Composable
 fun TrivialScreenSample() {
