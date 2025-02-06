@@ -1,9 +1,18 @@
 package cat.itb.m78.exercices.T5ivial
-
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -11,6 +20,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -18,6 +33,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import cat.itb.m78.exercices.Navegació.ScreenInici
 import kotlinx.coroutines.delay
+import m78exercices.composeapp.generated.resources.GatoInteligente
+import m78exercices.composeapp.generated.resources.Res
+import org.jetbrains.compose.resources.painterResource
 import kotlin.random.Random
 
 object Trivial {
@@ -160,33 +178,48 @@ private class PlayTrivial: ViewModel() {
     )
     var categories = listOf(ScienceQuestions, SportsQuestions, GeneralQuestions, MathematicQuestions, HistoricQuestions)
     var category = mutableStateOf(categories.random())
-    var currentQuestion = questionsHistor.random()
-    var answers = listOf(currentQuestion.correctAnswer, currentQuestion.incorrectAnswer, currentQuestion.incorrectAnswerTwo, currentQuestion.incorrectAnswerThree).shuffled(random = Random)
-    var count = mutableStateOf(0)
+    var currentQuestion = mutableStateOf(questionsHistor.random())
+    var answers = mutableListOf(currentQuestion.value.correctAnswer, currentQuestion.value.incorrectAnswer, currentQuestion.value.incorrectAnswerTwo, currentQuestion.value.incorrectAnswerThree).shuffled(random = Random)
+    var count = mutableStateOf(1)
+    var countEncertades = mutableStateOf(0)
     var dificulty = mutableStateOf(1)
     var rounds = mutableStateOf(5)
     var time = mutableStateOf(10)
     var correct = mutableStateOf(false)
+    var clicado = mutableStateOf(false)
     fun randomQuestion(){
-        category= mutableStateOf(categories.random())
-        when(category.toString()){
-            "ScienceQuestions" -> currentQuestion = questionsScience.random()
-            "SportsQuestions" -> currentQuestion = questionsSports.random()
-            "GeneralQuestions" -> currentQuestion = questionsGeneral.random()
-            "MathematicQuestions" -> currentQuestion = questionsMath.random()
-            "HistoricQuestions" -> currentQuestion = questionsHistor.random()
+        if(count.value < rounds.value){
+            category= mutableStateOf(categories.random())
+            when(category.value){
+                ScienceQuestions -> currentQuestion.value = questionsScience.random()
+                SportsQuestions -> currentQuestion.value = questionsSports.random()
+                GeneralQuestions -> currentQuestion.value = questionsGeneral.random()
+                MathematicQuestions -> currentQuestion.value = questionsMath.random()
+                HistoricQuestions -> currentQuestion.value = questionsHistor.random()
+            }
+            answers = mutableListOf(currentQuestion.value.correctAnswer, currentQuestion.value.incorrectAnswer, currentQuestion.value.incorrectAnswerTwo, currentQuestion.value.incorrectAnswerThree).shuffled(random = Random)
+            if(correct.value){
+                countEncertades.value ++
+            }
+            count.value++
+            correct.value = false
+            clicado.value = false
         }
-        answers = listOf(currentQuestion.correctAnswer, currentQuestion.incorrectAnswer, currentQuestion.incorrectAnswerTwo, currentQuestion.incorrectAnswerThree).shuffled(random = Random)
-        correct.value = false
+
+
     }
     fun comprvCorrect(value: String ){
-        if(value == currentQuestion.correctAnswer){
+        if(value == currentQuestion.value.correctAnswer){
             correct.value = true
         }
     }
     fun time(){
         time.value --
     }
+    fun click(){
+        clicado.value = true
+    }
+
 }
 @Composable
 fun countDown(){
@@ -201,21 +234,36 @@ fun countDown(){
 @Composable
 fun ScreenTrivial(navigateToScreenEnd: () -> Unit){
     val model = viewModel { PlayTrivial() }
-    model.randomQuestion()
-    Column{
-            Text(model.time.value.toString())
-            Text(model.currentQuestion.question)
-        Row{
-            for(i in 0..1){
-                buttons(model::comprvCorrect, model::randomQuestion, model.answers[i])
-            }
-        }
-        Row{
-            for(i in 2..3){
-                buttons(model::comprvCorrect, model::randomQuestion, model.answers[i])
-            }
-        }
 
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
+            Text(model.time.value.toString())
+            Text(model.currentQuestion.value.question)
+        Column(modifier = Modifier.padding(20.dp)){
+            Row{
+                Column{
+                    for(i in 0..1){
+                        buttons(model::comprvCorrect, model.answers[i], model::click)
+                        Spacer(modifier = Modifier.height(20.dp).width(40.dp))
+                    }
+
+                }
+                Spacer(modifier = Modifier.width(50.dp))
+                Column{
+                    for(i in 2..3){
+                        buttons(model::comprvCorrect, model.answers[i], model::click)
+                        Spacer(modifier = Modifier.height(20.dp).width(40.dp))
+                    }
+                }
+            }
+
+        }
+        if(model.count.value < model.rounds.value){
+            correct(model.clicado.value, model.correct.value, model::randomQuestion)
+            Text("Ronda: "+ model.count.value)
+        }else{
+            correct(model.clicado.value, model.correct.value)
+            Text("Ronda "+ model.count.value)
+        }
         Button(onClick = {navigateToScreenEnd()}){
             Text("Exit")
         }
@@ -225,28 +273,55 @@ fun ScreenTrivial(navigateToScreenEnd: () -> Unit){
 
 }
 @Composable
-fun buttons(onClick: (String) ->Unit, randomQuestion: () -> Unit, message:String ){
-    val model = viewModel { PlayTrivial() }
-    Button(onClick = {onClick(message); randomQuestion()}){
+fun correct(click: Boolean, correct: Boolean){
+    if(click){
+        if(!correct){
+            Text("INCORRECT!")
+        }else{
+            Text("CORRECT!")
+
+        }
+        Text("Ja no hi ha més rondas!")
+    }
+}
+@Composable
+fun correct(click: Boolean, correct: Boolean, question: () -> Unit){
+    if(click){
+        if(!correct){
+            Text("INCORRECT!")
+        }else{
+            Text("CORRECT!")
+
+        }
+        nextQuestion(question)
+    }
+}
+@Composable
+fun nextQuestion(onClick : () ->Unit){
+    Button(onClick = onClick){
+        Text("nextQuestion")
+    }
+}
+@Composable
+fun buttons(onClick: (String) ->Unit, message:String, click: ()-> Unit ){
+    Button(onClick = {onClick(message); click()}){
         Text(message)
     }
-
-
-
 }
 
 @Composable
-fun buttonExit(navigateToScreenTrivial: () -> Unit){
-    Button(onClick = navigateToScreenTrivial){
-        Text("NextQuestion")
-    }
-}
-@Composable
-fun ScreenInici(navigateToScreenTrivial: () -> Unit){
+fun ScreenInici(navigateToScreenTrivial: () -> Unit, navigateToScreenSettings: () -> Unit){
     Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center){
-        Text("Screen 1")
+
+        Image(painter = painterResource(Res.drawable.GatoInteligente), contentDescription = null, modifier = Modifier.size(200.dp).border(2.dp, Color.White, CircleShape).clip(
+            CircleShape
+        ))
+        Text("TRIVIAL", fontSize = 4.em, fontWeight = FontWeight.Bold)
         Button(onClick = {navigateToScreenTrivial()}){
             Text("Play")
+        }
+        Button(onClick = {navigateToScreenSettings()}){
+            Text("Settings")
         }
     }
 
@@ -254,22 +329,26 @@ fun ScreenInici(navigateToScreenTrivial: () -> Unit){
 @Composable
 fun ScreenEnd(navigateToScreenInici: ()-> Unit){
     Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center){
-        Text("pumba")
-        Text("Screen 3")
+        val model = viewModel { PlayTrivial() }
+        Text("Puntuació: "+model.countEncertades.value+"/"+model.rounds.value)
         Button(onClick = {navigateToScreenInici()}) {
-            Text("main menu")}
+            Text("Main menu")}
     }}
 @Composable
 fun ScreenSettings(navigateToScreenInici: () -> Unit){
-
+    Button(onClick = {navigateToScreenInici()}){
+        Text("<--")
+    }
 }
 @Composable
 fun TrivialScreenSample() {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = Trivial.ScreenTrivial) {
+    NavHost(navController = navController, startDestination = Trivial.ScreenInici) {
 
         composable<Trivial.ScreenInici> {
-            ScreenInici{navController.navigate(Trivial.ScreenTrivial)}
+            ScreenInici(
+                navigateToScreenTrivial = {navController.navigate(Trivial.ScreenTrivial)},
+                navigateToScreenSettings = {navController.navigate(Trivial.ScreenSettings)})
         }
         composable<Trivial.ScreenTrivial> {
             ScreenTrivial(
