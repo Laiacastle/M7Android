@@ -12,21 +12,28 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -35,6 +42,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
+import cat.itb.m78.exercices.Navegació.Destination
 import cat.itb.m78.exercices.Navegació.ScreenInici
 import kotlinx.coroutines.delay
 import m78exercices.composeapp.generated.resources.GatoInteligente
@@ -48,9 +57,11 @@ object Trivial {
     @kotlinx.serialization.Serializable
     data object ScreenTrivial
     @kotlinx.serialization.Serializable
-    data object ScreenEnd
+    data class ScreenEnd(val points: Int)
     @kotlinx.serialization.Serializable
     data object ScreenSettings
+    @kotlinx.serialization.Serializable
+    data object ScreenCategory
 }
 data class Question(val question: String, val correctAnswer: String, val incorrectAnswer: String, val incorrectAnswerTwo: String, val incorrectAnswerThree: String)
 object MathematicQuestions{
@@ -118,6 +129,9 @@ object ScienceQuestions{
     val question10 = Question("¿Qué es la teoría del Big Bang?", "La expansión del universo desde un solo punto", "El origen de las estrellas", "La formación de los agujeros negros", "El fin del universo")
 
 }
+public val categories = listOf(ScienceQuestions, SportsQuestions, GeneralQuestions, MathematicQuestions, HistoricQuestions)
+public var category = mutableStateOf(categories[0])
+var currentQuestion = mutableStateOf(ScienceQuestions.question1)
 private class PlayTrivial: ViewModel() {
     var questionsScience = listOf(
         ScienceQuestions.question1,
@@ -180,20 +194,33 @@ private class PlayTrivial: ViewModel() {
         HistoricQuestions.question9,
         HistoricQuestions.question10
     )
-    var categories = listOf(ScienceQuestions, SportsQuestions, GeneralQuestions, MathematicQuestions, HistoricQuestions)
-    var category = mutableStateOf(categories.random())
-    var currentQuestion = mutableStateOf(questionsHistor.random())
+
+
     var answers = mutableListOf(currentQuestion.value.correctAnswer, currentQuestion.value.incorrectAnswer, currentQuestion.value.incorrectAnswerTwo, currentQuestion.value.incorrectAnswerThree).shuffled(random = Random)
     var count = mutableStateOf(1)
     var countEncertades = mutableStateOf(0)
-    var dificulty = mutableStateOf(1)
     var rounds = mutableStateOf(5)
     var time = mutableStateOf(10)
     var correct = mutableStateOf(false)
     var clicado = mutableStateOf(false)
+    val random = mutableStateOf(false)
+
+    fun changeCategory(cate: String){
+        when(cate){
+            "Maths" -> category.value = MathematicQuestions
+            "Sports" -> category.value = SportsQuestions
+            "History" -> category.value = HistoricQuestions
+            "General culture" -> category.value = GeneralQuestions
+            "Science" -> category.value = ScienceQuestions
+            "Random" -> random.value = true
+        }
+    }
+
     fun randomQuestion(){
         if(count.value < rounds.value){
-            category= mutableStateOf(categories.random())
+            if(random.value){
+                category.value = mutableStateOf(categories.random());
+            }
             when(category.value){
                 ScienceQuestions -> currentQuestion.value = questionsScience.random()
                 SportsQuestions -> currentQuestion.value = questionsSports.random()
@@ -208,10 +235,12 @@ private class PlayTrivial: ViewModel() {
             count.value++
             correct.value = false
             clicado.value = false
+
         }
 
 
     }
+
     fun comprvCorrect(value: String ){
         if(value == currentQuestion.value.correctAnswer){
             correct.value = true
@@ -225,6 +254,23 @@ private class PlayTrivial: ViewModel() {
     }
 
 }
+enum class TrivialSubject{Kotlin, Html}
+data class TrivialSettings(
+    val difficulty : TrivialSubject = TrivialSubject.Kotlin,
+    val questionsPerGame: Int = 10
+
+)
+
+
+data object TrivialSettingsManager{
+    private var settings = TrivialSettings()
+    fun update(newSettings: TrivialSettings){
+        settings = newSettings
+    }
+    fun get() = settings
+}
+
+
 @Composable
 fun countDown(){
     val model = viewModel{ PlayTrivial() }
@@ -235,16 +281,19 @@ fun countDown(){
         }
     }
 }
-@Composable
-fun ScreenTrivial(navigateToScreenEnd: () -> Unit){
-    val model = viewModel { PlayTrivial() }
+data object Colors{
     val yellow = Color(0xfffbe7c6)
     val green = Color(0xffb4f8c8)
     val blue = Color(0xffa0e7e5)
     val pink = Color(0xffffaebc)
-    Column(Modifier.fillMaxSize().background(color = yellow), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
-            Text(model.time.value.toString(), color = green)
-            Text(model.currentQuestion.value.question, color = Color.Gray)
+}
+@Composable
+fun ScreenTrivial(navigateToScreenEnd: (Int) -> Unit){
+    val model = viewModel { PlayTrivial() }
+
+    Column(Modifier.fillMaxSize().background(color = Colors.yellow), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
+            Text(model.time.value.toString(), color = Colors.green)
+            Text(currentQuestion.value.question, color = Color.Gray)
         Column(modifier = Modifier.padding(20.dp)){
             Row{
                 Column{
@@ -264,6 +313,7 @@ fun ScreenTrivial(navigateToScreenEnd: () -> Unit){
             }
 
         }
+        val points :Int = model.countEncertades.value
         if(model.count.value < model.rounds.value){
             correct(model.clicado.value, model.correct.value, model::randomQuestion)
             Text("Ronda: "+ model.count.value, color = Color.Gray)
@@ -271,7 +321,7 @@ fun ScreenTrivial(navigateToScreenEnd: () -> Unit){
             correct(model.clicado.value, model.correct.value)
             Text("Ronda "+ model.count.value)
         }
-        Button(onClick = {navigateToScreenEnd()}, colors = ButtonColors(pink, blue, Color.Black, Color.White)){
+        Button(onClick = {navigateToScreenEnd(points)}, colors = ButtonColors(Colors.pink, Colors.blue, Color.Black, Color.White)){
             Text("Exit")
         }
     }
@@ -311,61 +361,89 @@ fun nextQuestion(onClick : () ->Unit){
 }
 @Composable
 fun buttons(onClick: (String) ->Unit, message:String, click: ()-> Unit ){
-    val blue = Color(0xffa0e7e5)
-    val pink = Color(0xffffaebc)
-    FilledTonalButton(onClick = {onClick(message); click()}, colors = ButtonColors(blue, Color.White, Color.Black, Color.White)){
+    FilledTonalButton(onClick = {onClick(message); click()}, colors = ButtonColors(Colors.blue, Color.White, Color.Black, Color.White)){
         Text(message)
+    }
+}
+@Composable
+fun buttons(onClick: () -> Unit, message: String){
+    Button(onClick = {onClick()}){
+        Text(message)
+    }
+}
+@Composable
+fun ScreenSettings(navigateToScreenInici: () -> Unit){
+    val rounds = listOf(5, 10, 15)
+    var round by remember{mutableStateOf(rounds[0])}
+
+    var text by remember {mutableStateOf(5)}
+    val difficulty = listOf("Normal", "Easy", "Difficult")
+    Column(modifier = Modifier.background(color = Colors.yellow).fillMaxSize()){
+        Row {
+            Text("Difficulty")
+            Column(modifier = Modifier.selectableGroup()){
+                for (i in 0..2) {
+                    Row(modifier = Modifier.selectable(
+                        selected = (text == round),
+                        onClick = { null},
+                        role = Role.RadioButton)) {
+                        RadioButton(selected = text == round, onClick = null)
+                        Text(rounds[i].toString())
+                    }
+
+                }
+            }
+        }
+        Button(onClick = {navigateToScreenInici()}, colors = ButtonColors(Colors.pink, Colors.blue, Color.Black, Color.White)){
+            Text("<--")
+        }
+
+}}
+@Composable
+fun ScreenCategory(navigateToScreenInici: () -> Unit, navigateToScreenTrivial: () -> Unit){
+    val model = viewModel { PlayTrivial() }
+    val categories = listOf("Maths", "General culture", "Sports", "Science", "History", "Random")
+    Column(Modifier.fillMaxSize().background(color = Colors.yellow), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
+        Text("Select category")
+        for(i in categories){
+            Button(onClick = {model.changeCategory(i); model.randomQuestion();navigateToScreenTrivial()}, colors = ButtonColors(Colors.blue, Color.White, Color.Black, Color.White)){
+                Text(i)
+            }
+        }
+        Button(onClick = {navigateToScreenInici()}, colors = ButtonColors(Colors.pink, Colors.blue, Color.Black, Color.White)){
+            Text("<--")
+        }
     }
 }
 
 @Composable
-fun ScreenInici(navigateToScreenTrivial: () -> Unit, navigateToScreenSettings: () -> Unit){
-    val yellow = Color(0xfffbe7c6)
-    val green = Color(0xffb4f8c8)
-    val blue = Color(0xffa0e7e5)
-    val pink = Color(0xffffaebc)
-    Column(Modifier.fillMaxSize().background(color = yellow), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center){
+fun ScreenInici(navigateToScreenCategory: () -> Unit, navigateToScreenSettings: () -> Unit){
+
+    Column(Modifier.fillMaxSize().background(color = Colors.yellow), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center){
 
         Image(painter = painterResource(Res.drawable.GatoInteligente), contentDescription = null, modifier = Modifier.size(200.dp).border(2.dp, Color.White, CircleShape).clip(
             CircleShape
         ))
-        Text("TRIVIAL", fontSize = 4.em, fontWeight = FontWeight.Bold, color = green)
-        ElevatedButton(onClick = {navigateToScreenTrivial()}, colors = ButtonColors(blue, pink, Color.Black, Color.White)){
+        Text("TRIVIAL", fontSize = 4.em, fontWeight = FontWeight.Bold, color = Colors.green)
+        ElevatedButton(onClick = {navigateToScreenCategory()}, colors = ButtonColors(Colors.blue, Colors.pink, Color.Black, Color.White)){
             Text("Play")
         }
-        ElevatedButton(onClick = {navigateToScreenSettings()}, colors = ButtonColors(pink, blue, Color.Black, Color.White)){
+        ElevatedButton(onClick = {navigateToScreenSettings()}, colors = ButtonColors(Colors.pink, Colors.blue, Color.Black, Color.White)){
             Text("Settings")
         }
     }
 
 }
 @Composable
-fun ScreenEnd(navigateToScreenInici: ()-> Unit){
+fun ScreenEnd(navigateToScreenInici: ()-> Unit, points: Int){
     val model = viewModel { PlayTrivial() }
-    val yellow = Color(0xfffbe7c6)
-    val green = Color(0xffb4f8c8)
-    val blue = Color(0xffa0e7e5)
-    val pink = Color(0xffffaebc)
-    Column(Modifier.fillMaxSize().background(color = yellow), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center){
-        val model = viewModel { PlayTrivial() }
-        Text("Puntuació: "+model.countEncertades.value+"/"+model.rounds.value, color = green)
-        Button(onClick = {navigateToScreenInici()}, colors = ButtonColors(pink, blue, Color.Black, Color.White)) {
+    Column(Modifier.fillMaxSize().background(color = Colors.yellow), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center){
+
+        Text("Puntuació: "+points+"/"+model.rounds.value, color = Colors.green)
+        Button(onClick = {navigateToScreenInici()}, colors = ButtonColors(Colors.pink, Colors.blue, Color.Black, Color.White)) {
             Text("Main menu")}
     }}
-@Composable
-fun ScreenSettings(navigateToScreenInici: () -> Unit){
-    val model = viewModel { PlayTrivial() }
-    val yellow = Color(0xfffbe7c6)
-    val green = Color(0xffb4f8c8)
-    val blue = Color(0xffa0e7e5)
-    val pink = Color(0xffffaebc)
-    Column(modifier = Modifier.background(color = yellow).fillMaxSize()){
-        Button(onClick = {navigateToScreenInici()}, colors = ButtonColors(pink, blue, Color.Black, Color.White)){
-            Text("<--")
-        }
-    }
 
-}
 @Composable
 fun TrivialScreenSample() {
     val navController = rememberNavController()
@@ -373,20 +451,28 @@ fun TrivialScreenSample() {
 
         composable<Trivial.ScreenInici> {
             ScreenInici(
-                navigateToScreenTrivial = {navController.navigate(Trivial.ScreenTrivial)},
+                navigateToScreenCategory = {navController.navigate(Trivial.ScreenCategory)},
                 navigateToScreenSettings = {navController.navigate(Trivial.ScreenSettings)})
         }
         composable<Trivial.ScreenTrivial> {
             ScreenTrivial(
-                navigateToScreenEnd = {navController.navigate(Trivial.ScreenEnd)}
-
+                navigateToScreenEnd = {navController.navigate(Trivial.ScreenEnd(it))},
             )
         }
-        composable<Trivial.ScreenEnd> {
-            ScreenEnd{ navController.navigate(Trivial.ScreenInici) }
+        composable<Trivial.ScreenEnd> {backStack ->
+            val points = backStack.toRoute<Trivial.ScreenTrivial>().points
+            ScreenEnd(
+                navigateToScreenInici = { navController.navigate(Trivial.ScreenInici) },
+                points = points
+            )
         }
         composable<Trivial.ScreenSettings> {
             ScreenSettings{navController.navigate(Trivial.ScreenInici)}
+        }
+        composable<Trivial.ScreenCategory>{
+            ScreenCategory(
+                navigateToScreenInici = {navController.navigate(Trivial.ScreenInici)},
+                navigateToScreenTrivial = {navController.navigate(Trivial.ScreenTrivial)})
         }
     }
 }
