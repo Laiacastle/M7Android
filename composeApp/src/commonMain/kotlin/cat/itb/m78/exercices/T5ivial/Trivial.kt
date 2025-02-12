@@ -18,7 +18,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -48,6 +50,7 @@ import cat.itb.m78.exercices.Navegació.ScreenInici
 import kotlinx.coroutines.delay
 import m78exercices.composeapp.generated.resources.GatoInteligente
 import m78exercices.composeapp.generated.resources.Res
+import org.jetbrains.compose.resources.Font
 import org.jetbrains.compose.resources.painterResource
 import kotlin.random.Random
 
@@ -257,7 +260,7 @@ private class PlayTrivial: ViewModel() {
 enum class TrivialSubject{Kotlin, Html}
 data class TrivialSettings(
     val difficulty : TrivialSubject = TrivialSubject.Kotlin,
-    val questionsPerGame: Int = 10
+    val questionsPerGame: Int = 5
 
 )
 
@@ -270,6 +273,16 @@ data object TrivialSettingsManager{
     fun get() = settings
 }
 
+private class SettingsViewModel: ViewModel(){
+    fun updateDifficulty(diff: String){
+        when(diff){
+            "Easy" -> TrivialSettingsManager.get().difficulty = 1
+        }
+    }
+    fun updateRounds(rounds: Int){
+        TrivialSettingsManager.get().questionsPerGame = rounds
+    }
+}
 
 @Composable
 fun countDown(){
@@ -381,6 +394,7 @@ fun ScreenSettings(navigateToScreenInici: () -> Unit){
     Column(modifier = Modifier.background(color = Colors.yellow).fillMaxSize()){
         Row {
             Text("Difficulty")
+
             Column(modifier = Modifier.selectableGroup()){
                 for (i in 0..2) {
                     Row(modifier = Modifier.selectable(
@@ -389,6 +403,22 @@ fun ScreenSettings(navigateToScreenInici: () -> Unit){
                         role = Role.RadioButton)) {
                         RadioButton(selected = text == round, onClick = null)
                         Text(rounds[i].toString())
+                    }
+                    Row(
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .height(56.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selected,
+                            onClick = onClick,
+                            enabled = enabled
+                        )
+                        Text(
+                            text = rounds[i].toString(),
+                            modifier = Modifier.padding(start = 16.dp)
+                        )
                     }
 
                 }
@@ -424,7 +454,7 @@ fun ScreenInici(navigateToScreenCategory: () -> Unit, navigateToScreenSettings: 
         Image(painter = painterResource(Res.drawable.GatoInteligente), contentDescription = null, modifier = Modifier.size(200.dp).border(2.dp, Color.White, CircleShape).clip(
             CircleShape
         ))
-        Text("TRIVIAL", fontSize = 4.em, fontWeight = FontWeight.Bold, color = Colors.green)
+        Text("TRIVIAL", fontSize = 4.em, fontWeight = FontWeight.Bold, color = Colors.green, /*fontFamily = FontFamily(Font(Res.font.MilkyNice))*/)
         ElevatedButton(onClick = {navigateToScreenCategory()}, colors = ButtonColors(Colors.blue, Colors.pink, Color.Black, Color.White)){
             Text("Play")
         }
@@ -460,7 +490,7 @@ fun TrivialScreenSample() {
             )
         }
         composable<Trivial.ScreenEnd> {backStack ->
-            val points = backStack.toRoute<Trivial.ScreenTrivial>().points
+            val points = backStack.toRoute<Trivial.ScreenEnd>().points
             ScreenEnd(
                 navigateToScreenInici = { navController.navigate(Trivial.ScreenInici) },
                 points = points
