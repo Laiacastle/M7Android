@@ -1,5 +1,4 @@
 package cat.itb.m78.exercices.T5ivial
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -17,12 +17,19 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,14 +51,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import cat.itb.m78.exercices.Navegació.Destination
-import cat.itb.m78.exercices.Navegació.ScreenInici
 import kotlinx.coroutines.delay
 import m78exercices.composeapp.generated.resources.GatoInteligente
 import m78exercices.composeapp.generated.resources.Res
-import org.jetbrains.compose.resources.Font
 import org.jetbrains.compose.resources.painterResource
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.seconds
 
 object Trivial {
     @kotlinx.serialization.Serializable
@@ -132,8 +136,8 @@ object ScienceQuestions{
     val question10 = Question("¿Qué es la teoría del Big Bang?", "La expansión del universo desde un solo punto", "El origen de las estrellas", "La formación de los agujeros negros", "El fin del universo")
 
 }
-public val categories = listOf(ScienceQuestions, SportsQuestions, GeneralQuestions, MathematicQuestions, HistoricQuestions)
-public var category = mutableStateOf(categories[0])
+val categories = listOf(ScienceQuestions, SportsQuestions, GeneralQuestions, MathematicQuestions, HistoricQuestions)
+var category = mutableStateOf(categories[0])
 var currentQuestion = mutableStateOf(ScienceQuestions.question1)
 private class PlayTrivial: ViewModel() {
     var questionsScience = listOf(
@@ -198,31 +202,30 @@ private class PlayTrivial: ViewModel() {
         HistoricQuestions.question10
     )
 
-
     var answers = mutableListOf(currentQuestion.value.correctAnswer, currentQuestion.value.incorrectAnswer, currentQuestion.value.incorrectAnswerTwo, currentQuestion.value.incorrectAnswerThree).shuffled(random = Random)
     var count = mutableStateOf(1)
     var countEncertades = mutableStateOf(0)
-    var rounds = mutableStateOf(5)
-    var time = mutableStateOf(10)
+    val rounds = TrivialSettingsManager.get().rounds
+    var time = mutableStateOf(TrivialSettingsManager.get().time)
     var correct = mutableStateOf(false)
     var clicado = mutableStateOf(false)
     val random = mutableStateOf(false)
 
-    fun changeCategory(cate: String){
+    fun changeCategory(cate: TrivialSubject){
         when(cate){
-            "Maths" -> category.value = MathematicQuestions
-            "Sports" -> category.value = SportsQuestions
-            "History" -> category.value = HistoricQuestions
-            "General culture" -> category.value = GeneralQuestions
-            "Science" -> category.value = ScienceQuestions
-            "Random" -> random.value = true
+            TrivialSubject.Math -> category.value = MathematicQuestions
+            TrivialSubject.Sports -> category.value = SportsQuestions
+            TrivialSubject.History -> category.value = HistoricQuestions
+            TrivialSubject.General -> category.value = GeneralQuestions
+            TrivialSubject.Science -> category.value = ScienceQuestions
+            TrivialSubject.Random -> random.value = true
         }
     }
 
     fun randomQuestion(){
-        if(count.value < rounds.value){
+        if(count.value < rounds){
             if(random.value){
-                category.value = mutableStateOf(categories.random());
+                category.value = mutableStateOf(categories.random())
             }
             when(category.value){
                 ScienceQuestions -> currentQuestion.value = questionsScience.random()
@@ -252,18 +255,22 @@ private class PlayTrivial: ViewModel() {
     fun time(){
         time.value --
     }
+    fun resetTime(){
+        time.value = TrivialSettingsManager.get().time
+    }
     fun click(){
         clicado.value = true
     }
 
 }
-enum class TrivialSubject{Kotlin, Html}
+enum class TrivialSubject{Math, History, Sports, General, Science, Random}
+
 data class TrivialSettings(
-    val difficulty : TrivialSubject = TrivialSubject.Kotlin,
-    val questionsPerGame: Int = 5
-
+    val difficulty : String ="Medium",
+    val rounds: Int = 5,
+    val time: Int = 10,
+    val category: TrivialSubject = TrivialSubject.Random
 )
-
 
 data object TrivialSettingsManager{
     private var settings = TrivialSettings()
@@ -274,26 +281,46 @@ data object TrivialSettingsManager{
 }
 
 private class SettingsViewModel: ViewModel(){
+    private var difficulty = TrivialSettingsManager.get().difficulty
+    private var rounds = TrivialSettingsManager.get().rounds
+    private var time = TrivialSettingsManager.get().time
     fun updateDifficulty(diff: String){
-        when(diff){
-            "Easy" -> TrivialSettingsManager.get().difficulty = 1
-        }
+        difficulty = diff
+        saveSettings()
     }
-    fun updateRounds(rounds: Int){
-        TrivialSettingsManager.get().questionsPerGame = rounds
+    fun updateTime(tim: Int){
+        time = tim
+        saveSettings()
+    }
+    fun updateRounds(round: Int){
+         rounds = round
+        saveSettings()
+    }
+    fun saveSettings(){
+        val newSett = TrivialSettings(difficulty, rounds, time)
+        TrivialSettingsManager.update(newSett)
     }
 }
 
 @Composable
-fun countDown(){
-    val model = viewModel{ PlayTrivial() }
-    LaunchedEffect(key1 = model.time.value){
-        while(model.time.value > 0){
-            delay(1000L)
-            model.time()
+fun CountDownScreen(time: Int, minusTime: () -> Unit){
+    LaunchedEffect(time){
+        delay(1.seconds)
+
+        if(time>0){
+            minusTime()
         }
     }
+    Column{
+        Text(time.toString(), color = Colors.blue)
+    }
 }
+@Composable
+fun TrivialModel(){
+    val model = viewModel { PlayTrivial() }
+    ScreenTrivial()
+}
+
 data object Colors{
     val yellow = Color(0xfffbe7c6)
     val green = Color(0xffb4f8c8)
@@ -301,17 +328,15 @@ data object Colors{
     val pink = Color(0xffffaebc)
 }
 @Composable
-fun ScreenTrivial(navigateToScreenEnd: (Int) -> Unit){
-    val model = viewModel { PlayTrivial() }
-
+fun ScreenTrivial(navigateToScreenEnd: (Int) -> Unit, time:Int, minusTime:()->Unit, comprvCorrect:(String)->Unit, click:()->Unit, encertades: Int, rondesJugades: Int, correct: Boolean, rounds: Int, resetTime:()->Unit, clicado: Boolean, randomQuestion: () ->Unit){
     Column(Modifier.fillMaxSize().background(color = Colors.yellow), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
-            Text(model.time.value.toString(), color = Colors.green)
+            CountDownScreen(time, minusTime)
             Text(currentQuestion.value.question, color = Color.Gray)
         Column(modifier = Modifier.padding(20.dp)){
             Row{
                 Column{
                     for(i in 0..1){
-                        buttons(model::comprvCorrect, model.answers[i], model::click)
+                        buttons(comprvCorrect, model.answers[i], click)
                         Spacer(modifier = Modifier.height(20.dp).width(40.dp))
                     }
 
@@ -319,125 +344,201 @@ fun ScreenTrivial(navigateToScreenEnd: (Int) -> Unit){
                 Spacer(modifier = Modifier.width(50.dp))
                 Column{
                     for(i in 2..3){
-                        buttons(model::comprvCorrect, model.answers[i], model::click)
+                        buttons(comprvCorrect, model.answers[i], click)
                         Spacer(modifier = Modifier.height(20.dp).width(40.dp))
                     }
                 }
             }
 
         }
-        val points :Int = model.countEncertades.value
-        if(model.count.value < model.rounds.value){
-            correct(model.clicado.value, model.correct.value, model::randomQuestion)
-            Text("Ronda: "+ model.count.value, color = Color.Gray)
+        val points :Int = encertades
+        if(rondesJugades < rounds){
+            correct(clicado, correct, time model::randomQuestion, resetTime)
+            Text("Ronda: "+ rondesJugades, color = Color.Gray)
         }else{
-            correct(model.clicado.value, model.correct.value)
-            Text("Ronda "+ model.count.value)
+            correct(clicado, correct, time)
+            Text("Ronda "+ rondesJugades)
         }
         Button(onClick = {navigateToScreenEnd(points)}, colors = ButtonColors(Colors.pink, Colors.blue, Color.Black, Color.White)){
             Text("Exit")
         }
     }
-
-
-
 }
-@Composable
-fun correct(click: Boolean, correct: Boolean){
-    if(click){
-        if(!correct){
-            Text("INCORRECT!")
-        }else{
-            Text("CORRECT!")
 
+@Composable
+fun correct(click: Boolean, correct: Boolean, time: Int){
+    if(time > 0){
+        if(click){
+            if(!correct){
+                Text("INCORRECT!")
+            }else{
+                Text("CORRECT!")
+
+            }
+            Text("Ja no hi ha més rondas!")
         }
-        Text("Ja no hi ha més rondas!")
+    }else{
+        Text("S'ha acabat el temps!")
     }
-}
-@Composable
-fun correct(click: Boolean, correct: Boolean, question: () -> Unit){
-    if(click){
-        if(!correct){
-            Text("INCORRECT!")
-        }else{
-            Text("CORRECT!")
 
-        }
-        nextQuestion(question)
-    }
 }
+
 @Composable
-fun nextQuestion(onClick : () ->Unit){
-    OutlinedButton(onClick = onClick){
+fun correct(click: Boolean, correct: Boolean, time: Int, question: () -> Unit, resetTime: () -> Unit){
+    if(time >0){
+        if(click){
+            if(!correct){
+                Text("INCORRECT!")
+            }else{
+                Text("CORRECT!")
+
+            }
+            nextQuestion(question, resetTime)
+        }
+    }else{
+        Text("S'ha acabat el temps!")
+        nextQuestion(question, resetTime)
+    }
+
+}
+
+@Composable
+fun nextQuestion(onClick : () ->Unit, resetTime: ()-> Unit){
+    OutlinedButton(onClick = {onClick(); resetTime()}){
         Text("nextQuestion")
     }
 }
+
 @Composable
 fun buttons(onClick: (String) ->Unit, message:String, click: ()-> Unit ){
     FilledTonalButton(onClick = {onClick(message); click()}, colors = ButtonColors(Colors.blue, Color.White, Color.Black, Color.White)){
         Text(message)
     }
 }
-@Composable
-fun buttons(onClick: () -> Unit, message: String){
-    Button(onClick = {onClick()}){
-        Text(message)
-    }
-}
+
 @Composable
 fun ScreenSettings(navigateToScreenInici: () -> Unit){
-    val rounds = listOf(5, 10, 15)
-    var round by remember{mutableStateOf(rounds[0])}
-
-    var text by remember {mutableStateOf(5)}
-    val difficulty = listOf("Normal", "Easy", "Difficult")
-    Column(modifier = Modifier.background(color = Colors.yellow).fillMaxSize()){
-        Row {
+    val model = viewModel{SettingsViewModel()}
+    Column(Modifier.fillMaxSize().background(color = Colors.yellow).padding(50.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
+        Row{
             Text("Difficulty")
-
-            Column(modifier = Modifier.selectableGroup()){
-                for (i in 0..2) {
-                    Row(modifier = Modifier.selectable(
-                        selected = (text == round),
-                        onClick = { null},
-                        role = Role.RadioButton)) {
-                        RadioButton(selected = text == round, onClick = null)
-                        Text(rounds[i].toString())
-                    }
-                    Row(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                            .height(56.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = selected,
-                            onClick = onClick,
-                            enabled = enabled
-                        )
-                        Text(
-                            text = rounds[i].toString(),
-                            modifier = Modifier.padding(start = 16.dp)
-                        )
-                    }
-
-                }
-            }
+            Spacer(modifier=Modifier.width((60.dp)))
+            DynamicSelectTextField(model::updateDifficulty)
+        }
+        Spacer(modifier = Modifier.height(40.dp))
+        Row {
+            Text("rounds")
+            Spacer(modifier = Modifier.width(60.dp))
+            RadioButton(model::updateRounds)
+        }
+        Spacer(modifier = Modifier.height(40.dp))
+        Row{
+            Text("Time")
+            Spacer(modifier = Modifier.width(60.dp))
+            SliderSettings(model::updateTime)
         }
         Button(onClick = {navigateToScreenInici()}, colors = ButtonColors(Colors.pink, Colors.blue, Color.Black, Color.White)){
             Text("<--")
         }
+    }
+}
 
-}}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DynamicSelectTextField(onClick: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    var selectedItem by remember{mutableStateOf(TrivialSettingsManager.get().difficulty)}
+    val difficult = listOf("Hard", "Easy", "Medium")
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = Modifier
+    ) {
+        OutlinedTextField(
+            readOnly = true,
+            value = selectedItem,
+            onValueChange = {},
+            label = { Text(text = "Dificulty") },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            },
+            colors = OutlinedTextFieldDefaults.colors(),
+            modifier = Modifier
+                .fillMaxWidth()
+        )
+
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            difficult.forEach { option: String ->
+                DropdownMenuItem(
+                    text = { Text(text = option) },
+                    onClick = {
+                        expanded = false
+                        onClick(option)
+                        selectedItem = option
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RadioButton(onClick: (Int)->Unit) {
+    val radioOptions = listOf(5, 10, 15)
+    val (selectedOption, onOptionSelected) = remember { mutableStateOf(TrivialSettingsManager.get().rounds) }
+    Row(modifier = Modifier.selectableGroup()) {
+        radioOptions.forEach { text ->
+            Row(
+                Modifier
+                    .height(56.dp)
+                    .selectable(
+                        selected = (text == selectedOption),
+                        onClick = { onOptionSelected(text) },
+                        role = Role.RadioButton
+                    )
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(
+                    selected = (text == selectedOption),
+                    onClick = {onClick(text)}
+                )
+                Text(
+                    text = text.toString(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(start = 16.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SliderSettings(onClick: (Int) -> Unit) {
+    var sliderPosition by remember { mutableStateOf(TrivialSettingsManager.get().time.toFloat()) }
+    Column {
+        Slider(
+            value = sliderPosition,
+            onValueChange = { sliderPosition = it;  onClick(it.toInt())},
+            colors = SliderDefaults.colors(
+                thumbColor = Colors.pink,
+                activeTrackColor = Colors.green,
+                inactiveTrackColor = Colors.blue,
+            ),
+            steps = 3,
+            valueRange = 5f..20f
+        )
+    }
+}
+
 @Composable
 fun ScreenCategory(navigateToScreenInici: () -> Unit, navigateToScreenTrivial: () -> Unit){
     val model = viewModel { PlayTrivial() }
-    val categories = listOf("Maths", "General culture", "Sports", "Science", "History", "Random")
     Column(Modifier.fillMaxSize().background(color = Colors.yellow), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
         Text("Select category")
-        for(i in categories){
+        for(i in TrivialSubject.entries){
             Button(onClick = {model.changeCategory(i); model.randomQuestion();navigateToScreenTrivial()}, colors = ButtonColors(Colors.blue, Color.White, Color.Black, Color.White)){
-                Text(i)
+                Text(i.toString())
             }
         }
         Button(onClick = {navigateToScreenInici()}, colors = ButtonColors(Colors.pink, Colors.blue, Color.Black, Color.White)){
@@ -464,12 +565,13 @@ fun ScreenInici(navigateToScreenCategory: () -> Unit, navigateToScreenSettings: 
     }
 
 }
+
 @Composable
 fun ScreenEnd(navigateToScreenInici: ()-> Unit, points: Int){
     val model = viewModel { PlayTrivial() }
     Column(Modifier.fillMaxSize().background(color = Colors.yellow), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center){
 
-        Text("Puntuació: "+points+"/"+model.rounds.value, color = Colors.green)
+        Text("Puntuació: "+points+"/"+model.rounds, color = Colors.green)
         Button(onClick = {navigateToScreenInici()}, colors = ButtonColors(Colors.pink, Colors.blue, Color.Black, Color.White)) {
             Text("Main menu")}
     }}
