@@ -1,4 +1,4 @@
-#La branca main te errors, la principal es reiniciando
+# La branca main te errors, la principal es reiniciando
 
 # Template for Compose Multiplatform DAM78 exercices
 
