@@ -17,7 +17,7 @@ fun ScreenEnd(navigateToScreenInici: ()-> Unit, points: Int){
     val model = viewModel { PlayTrivial() }
     Column(Modifier.fillMaxSize().background(color = Colors.yellow), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center){
 
-        Text("Puntuació: "+points+"/"+model.rounds, color = Colors.green)
+        Text("Puntuació: "+points+"/"+model.rounds, color = Color.Black)
         Button(onClick = {navigateToScreenInici()}, colors = ButtonColors(Colors.pink, Colors.blue, Color.Black, Color.White)) {
             Text("Main menu")
         }

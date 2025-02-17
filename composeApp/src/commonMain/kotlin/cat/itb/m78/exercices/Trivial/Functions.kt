@@ -83,7 +83,7 @@ fun correct(click: Boolean, correct: Boolean, time: Int, question: () -> Unit, r
 @Composable
 fun nextQuestion(onClick : () ->Unit, resetTime: ()-> Unit){
     OutlinedButton(onClick = {onClick(); resetTime()}){
-        Text("nextQuestion")
+        Text("Next question")
     }
 }
 

@@ -51,7 +51,6 @@ fun ScreenTrivial(navigateToScreenEnd: (Int) -> Unit, time:Int, minusTime:()->Un
                         buttons(comprvCorrect, model.answers[i], click)
                         Spacer(modifier = Modifier.height(20.dp).width(40.dp))
                     }
-
                 }
                 Spacer(modifier = Modifier.width(50.dp))
                 Column{
@@ -61,7 +60,6 @@ fun ScreenTrivial(navigateToScreenEnd: (Int) -> Unit, time:Int, minusTime:()->Un
                     }
                 }
             }
-
         }
         val points :Int = encertades
         if(rondesJugades < rounds){
@@ -69,7 +67,7 @@ fun ScreenTrivial(navigateToScreenEnd: (Int) -> Unit, time:Int, minusTime:()->Un
             Text("Ronda: "+ rondesJugades, color = Color.Gray)
         }else{
             correct(clicado, correct, time)
-            Text("Ronda "+ rondesJugades)
+            Text("Ronda: " + rondesJugades)
         }
         Button(onClick = {navigateToScreenEnd(points)}, colors = ButtonColors(Colors.pink, Colors.blue, Color.Black, Color.White)){
             Text("Exit")
