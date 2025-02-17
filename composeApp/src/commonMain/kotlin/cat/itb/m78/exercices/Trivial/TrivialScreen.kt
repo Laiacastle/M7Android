@@ -20,21 +20,35 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun TrivialModel(){
+fun TrivialModel(navigateToScreenEnd: (Int) -> Unit){
     val model = viewModel { PlayTrivial() }
-    ScreenTrivial(ScreenEnd(Int), model.time.value, model::minusTime, model::comprvCorrect, model::click, model.countEncertades.value, model.count.value, model.correct.value, model.rounds, model::resetTime, model.clicado.value, model.randomQuestion(), model.answers.value)
+    ScreenTrivial(
+        navigateToScreenEnd,
+        model.time.value,
+        model::minusTime,
+        model::comprvCorrect,
+        model::click,
+        model.countEncertades.value,
+        model.count.value,
+        model.correct.value,
+        model.rounds,
+        model::resetTime,
+        model.clicado.value,
+        model::randomQuestion,
+    )
 }
 
 @Composable
-fun ScreenTrivial(navigateToScreenEnd: (Int) -> Unit, time:Int, minusTime:()->Unit, comprvCorrect:(String)->Unit, click:()->Unit, encertades: Int, rondesJugades: Int, correct: Boolean, rounds: Int, resetTime:()->Unit, clicado: Boolean, randomQuestion: () ->Unit,  answers : listOf<T> ){
+fun ScreenTrivial(navigateToScreenEnd: (Int) -> Unit, time:Int, minusTime:()->Unit, comprvCorrect:(String)->Unit, click:()->Unit, encertades: Int, rondesJugades: Int, correct: Boolean, rounds: Int, resetTime:()->Unit, clicado: Boolean, randomQuestion: () ->Unit){
     Column(Modifier.fillMaxSize().background(color = Colors.yellow), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
+        val model = viewModel { PlayTrivial() }
         CountDownScreen(time, minusTime)
         Text(currentQuestion.value.question, color = Color.Gray)
         Column(modifier = Modifier.padding(20.dp)){
             Row{
                 Column{
                     for(i in 0..1){
-                        buttons(comprvCorrect, answers[i], click)
+                        buttons(comprvCorrect, model.answers[i], click)
                         Spacer(modifier = Modifier.height(20.dp).width(40.dp))
                     }
 
@@ -42,7 +56,7 @@ fun ScreenTrivial(navigateToScreenEnd: (Int) -> Unit, time:Int, minusTime:()->Un
                 Spacer(modifier = Modifier.width(50.dp))
                 Column{
                     for(i in 2..3){
-                        buttons(comprvCorrect, answers[i], click)
+                        buttons(comprvCorrect, model.answers[i], click)
                         Spacer(modifier = Modifier.height(20.dp).width(40.dp))
                     }
                 }

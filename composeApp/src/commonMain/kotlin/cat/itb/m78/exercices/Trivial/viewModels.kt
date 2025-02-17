@@ -143,7 +143,7 @@ public class SettingsViewModel: ViewModel(){
         rounds = round
         saveSettings()
     }
-    fun saveSettings(){
+    private fun saveSettings(){
         val newSett = TrivialSettings(difficulty, rounds, time)
         TrivialSettingsManager.update(newSett)
     }

@@ -17,7 +17,7 @@ fun TrivialScreenSample() {
                 navigateToScreenSettings = {navController.navigate(Trivial.ScreenSettings)})
         }
         composable<Trivial.ScreenTrivial> {
-            ScreenTrivial(
+            TrivialModel(
                 navigateToScreenEnd = {navController.navigate(Trivial.ScreenEnd(it))},
             )
         }
