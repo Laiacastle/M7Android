@@ -98,6 +98,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+    buildToolsVersion = "35.0.0"
 }
 
 //https://developer.android.com/develop/ui/compose/testing#setup
